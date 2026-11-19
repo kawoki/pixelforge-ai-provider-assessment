@@ -6,6 +6,7 @@ use App\Contracts\PixelforgeClient;
 use App\Enums\AlertType;
 use App\Mail\AdminAlertMail;
 use App\Models\User;
+use App\Services\Pixelforge\ProviderUsageCache;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -62,6 +63,18 @@ it('keeps finished days of usage for an hour, but refreshes today every few minu
     pixelforge()->getUsage($today, $today);
 
     expect(requestsTo('start_date=2026-11-19'))->toBe(1)->and(requestsTo('start_date=2026-11-20'))->toBe(2);
+});
+
+it('fetches Pixelforge\'s usage again as soon as one of our generations succeeds', function () {
+    fakePixelforgeHttp();
+    $today = CarbonImmutable::parse('2026-11-20');
+
+    pixelforge()->getUsage($today, $today);
+    pixelforge()->getUsage($today, $today);
+    app(ProviderUsageCache::class)->invalidate();
+    pixelforge()->getUsage($today, $today);
+
+    expect(requestsTo('/v1/usage'))->toBe(2);
 });
 
 it('tells admins once an hour when Pixelforge\'s pricing no longer matches our fallback copy', function () {

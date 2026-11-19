@@ -19,7 +19,8 @@ use Illuminate\Contracts\Cache\Repository as Cache;
  * 60 requests/min on them:
  *
  * - pricing: 1 h (it changes rarely; each generation is billed at its own fixed rates anyway)
- * - usage for days that are over: 1 h (final); a range including today: 5 min (it grows)
+ * - usage for days that are over: 1 h (final); a range including today: 5 min (it grows).
+ *   Either way it is refetched as soon as one of our generations succeeds (ProviderUsageCache).
  *
  * Generations are never cached: we only fetch ones that haven't finished, and those change.
  * Only plain arrays are cached (Laravel refuses to unserialize objects from the cache).
@@ -33,6 +34,7 @@ final readonly class CachedPixelforgeClient implements PixelforgeClient
         private PixelforgeHttpClient $pixelforge,
         private PricingPayloadMapper $pricing,
         private PricingDriftMonitor $drift,
+        private ProviderUsageCache $usageCache,
         private Cache $cache,
         #[Config('pixelforge.cache')] private array $ttl,
     ) {}
@@ -62,7 +64,7 @@ final readonly class CachedPixelforgeClient implements PixelforgeClient
     public function getUsage(CarbonImmutable $startDate, CarbonImmutable $endDate): ProviderUsageData
     {
         $includesToday = $endDate->toDateString() >= now('UTC')->toDateString();
-        $entry = "pixelforge-usage:{$startDate->toDateString()}:{$endDate->toDateString()}";
+        $entry = $this->usageCache->entry($startDate, $endDate);
 
         /** @var list<array{date: string, generations: int, cost: string}> $days */
         $days = $this->cache->remember($entry, $this->ttl[$includesToday ? 'usage_today_seconds' : 'usage_past_seconds'], fn (): array => $this->pixelforge->getUsage($startDate, $endDate)->toArray());

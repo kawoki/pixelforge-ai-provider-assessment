@@ -10,6 +10,8 @@ use App\Models\CreditTransaction;
 use App\Models\Generation;
 use App\Models\WebhookEvent;
 use App\Services\Pixelforge\GenerationPayloadMapper;
+use App\Services\Pixelforge\ProviderUsageCache;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
@@ -262,6 +264,20 @@ it('applies updates idempotently however often they are replayed (webhooks and p
     }
 
     expect(charges())->toBe(1)->and($generation->fresh()->status)->toBe(GenerationStatus::Succeeded);
+});
+
+it('makes the spend report fetch fresh Pixelforge figures once, when the charge is recorded', function () {
+    acceptedGeneration();
+    $succeeded = app(GenerationPayloadMapper::class)->map(PixelforgeFixtures::generationPayload());
+    $day = CarbonImmutable::parse('2026-11-04');
+    $before = app(ProviderUsageCache::class)->entry($day, $day);
+
+    app(ApplyProviderUpdateAction::class)->execute($succeeded);
+    $afterCharge = app(ProviderUsageCache::class)->entry($day, $day);
+    app(ApplyProviderUpdateAction::class)->execute($succeeded); // a duplicate changes nothing
+
+    expect($afterCharge)->not->toBe($before)
+        ->and(app(ProviderUsageCache::class)->entry($day, $day))->toBe($afterCharge);
 });
 
 it('decides from the generation object, not the event type', function () {

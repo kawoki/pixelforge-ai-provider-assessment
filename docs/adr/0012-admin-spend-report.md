@@ -15,7 +15,8 @@ profit, **per day and per user**. Provider costs must match `GET /v1/usage`, whi
    and `user_id`. `completed_at` is **Pixelforge's** completion time, because Pixelforge bills on the UTC day a
    generation completed.
 2. A **reconciliation column** fetches `GET /v1/usage?start_date&end_date` (UTC, inclusive, ≤ 92 days)
-   for the same range (cached 1 h for days that are over, 5 min when the range includes today) and compares our provider cost per day with `cost_usd`
+   for the same range (cached 1 h for days that are over, 5 min when the range includes today, and refetched as soon
+   as one of our generations succeeds, so a fresh charge is never compared with older Pixelforge figures) and compares our provider cost per day with `cost_usd`
    (exact, 9 decimal places). Mismatches are highlighted. `/v1/usage` is per API key, so the deployed
    environment's key is compared with the deployed environment's records.
 3. Access: `users.is_admin` (not mass-assignable, set by seeder/artisan command) + a `viewAdminReports`
@@ -52,4 +53,6 @@ profit, **per day and per user**. Provider costs must match `GET /v1/usage`, whi
   actually correct look wrong until confirmed against the docs.
 - Calling `/v1/usage` on page load uses rate-limit budget and makes the report depend on Pixelforge being up.
   The cache softens this, and the report still renders without that column.
+- Each successful generation costs one extra `/v1/usage` call, the next time an admin opens the report. If Pixelforge's
+  own usage figures lag behind its webhook, a just-finished generation can still show as a brief mismatch.
 - A boolean `is_admin` is coarse. Roles/permissions would be needed for more operator types.

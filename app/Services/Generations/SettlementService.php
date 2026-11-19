@@ -9,7 +9,9 @@ use App\Data\ProviderGenerationData;
 use App\Enums\GenerationStatus;
 use App\Models\Generation;
 use App\Services\Credits\CreditLedgerService;
+use App\Services\Pixelforge\ProviderUsageCache;
 use App\Services\Pricing\PricingService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use LogicException;
 
@@ -26,16 +28,24 @@ final readonly class SettlementService
         private GenerationLifecycleService $lifecycle,
         private PricingService $pricing,
         private CreditLedgerService $ledger,
+        private ProviderUsageCache $usageCache,
     ) {}
 
     public function settle(Generation $generation, ProviderGenerationData $provider): bool
     {
-        return $this->lifecycle->transition(
+        $settled = $this->lifecycle->transition(
             $generation,
             GenerationStatus::Succeeded,
             $this->result($provider),
             fn (Generation $locked): array => $this->charge($locked, $provider),
         );
+
+        if ($settled) {
+            // The spend report must not compare this new charge with /v1/usage figures fetched before it.
+            DB::afterCommit(fn () => $this->usageCache->invalidate());
+        }
+
+        return $settled;
     }
 
     /**
