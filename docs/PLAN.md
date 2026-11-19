@@ -283,3 +283,5 @@ ApplyProviderUpdateAction::execute(ProviderGenerationData)
   anonymisation, `CachedPixelforgeClient` (decorator bound to the `PixelforgeClient` contract, so services stay
   cache-free), pricing-drift alert, webhook/alert-log pruning, a separate `admin_alert_logs` table with an admin
   System status page, health-endpoint token, security headers + CSP nonce, and a `DemoSeeder` (F-16).
+- **No landing page or sign-up (2026-11-20):** `/` redirects guests to login and members to Generate; Fortify's
+  registration feature, `Register.vue`, `Welcome.vue` and `CreateNewUser` are removed. Reviewers use the seeded accounts.

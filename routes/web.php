@@ -8,7 +8,8 @@ use App\Http\Controllers\GenerationController;
 use App\Http\Controllers\GenerationEstimateController;
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'Welcome')->name('home');
+// No landing page and no public sign-up: guests go straight to the login page, members to Generate.
+Route::redirect('/', '/generations/create')->middleware('auth')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'Dashboard')->name('dashboard');

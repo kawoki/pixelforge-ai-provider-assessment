@@ -18,12 +18,14 @@ Custom PHPStan rule enforces the 15-line method rule for PHP. **Status: done (ph
 
 ## F-01 Authentication (P0)
 
-Starter-kit (Fortify) register/login/logout/password reset, 2FA, passkeys. All app routes require auth.
-**Status: done (phase 1). Comes from the kit, covered by the kit's tests.**
+Starter-kit (Fortify) login/logout/password reset, 2FA, passkeys. All app routes require auth.
+**Status: done (phase 1). Comes from the kit, covered by the kit's tests.** On 2026-11-20 the landing page and
+public registration were removed at the product owner's request: `/` sends guests to the login page and signed-in
+users to Generate. Accounts come from `DemoSeeder` (demo user + admin).
 
-- **AC**: guests are redirected to login. Users only ever see their own data.
-- **Drawbacks**: email verification adds friction for reviewers on the deployed app. We'll provide a
-  seeded demo account instead of disabling verification.
+- **AC**: guests are redirected to login. `/register` answers 404. Users only ever see their own data.
+- **Drawbacks**: nobody can sign up by themselves. New accounts need the seeder or a shell (there is no
+  "create user" command or admin screen yet). Seeded accounts are pre-verified, so email verification adds no friction.
 
 ## F-02 Money & pricing core (P0)
 

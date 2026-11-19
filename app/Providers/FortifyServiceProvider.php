@@ -2,7 +2,6 @@
 
 namespace App\Providers;
 
-use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -40,7 +39,6 @@ class FortifyServiceProvider extends ServiceProvider
     private function configureActions(): void
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
-        Fortify::createUsersUsing(CreateNewUser::class);
     }
 
     /**
@@ -53,7 +51,8 @@ class FortifyServiceProvider extends ServiceProvider
     }
 
     /**
-     * Configure login, registration, verification and challenge views.
+     * Configure login, verification and challenge views. There is no public registration:
+     * accounts come from the seeder (DemoSeeder).
      */
     private function configureAuthenticationViews(): void
     {
@@ -64,10 +63,6 @@ class FortifyServiceProvider extends ServiceProvider
 
         Fortify::verifyEmailView(fn (Request $request) => Inertia::render('auth/VerifyEmail', [
             'status' => $request->session()->get('status'),
-        ]));
-
-        Fortify::registerView(fn () => Inertia::render('auth/Register', [
-            'passwordRules' => Password::defaults()->toPasswordRulesString(),
         ]));
 
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/TwoFactorChallenge'));

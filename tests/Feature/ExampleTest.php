@@ -1,18 +1,19 @@
 <?php
 
-namespace Tests\Feature;
+declare(strict_types=1);
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
+use App\Models\User;
 
-class ExampleTest extends TestCase
-{
-    use RefreshDatabase;
+it('sends guests straight to the login page', function () {
+    $this->get('/')->assertRedirect(route('login'));
+});
 
-    public function test_returns_a_successful_response()
-    {
-        $response = $this->get(route('home'));
+it('sends signed-in users to the Generate page', function () {
+    $this->actingAs(User::factory()->create())->get('/')->assertRedirect(route('generations.create'));
+});
 
-        $response->assertOk();
-    }
-}
+it('has no public registration', function () {
+    $this->get('/register')->assertNotFound();
+    $this->post('/register', ['name' => 'x', 'email' => 'x@example.com', 'password' => 'password', 'password_confirmation' => 'password'])->assertNotFound();
+    $this->assertDatabaseCount('users', 0);
+});
